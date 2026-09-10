@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SITE_PAGES } from "@/lib/site-pages";
 import { absoluteUrl } from "@/lib/seo";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths = [

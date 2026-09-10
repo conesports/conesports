@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin-shell";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     default: "Admin",
