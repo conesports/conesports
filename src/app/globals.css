@@ -161,6 +161,34 @@ body {
   }
 }
 
+html[data-mobile-preload="open"],
+html[data-mobile-preload="open"] body {
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+.mobile-preload {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #000;
+  color: #fff;
+}
+
+@media (min-width: 1024px) {
+  .mobile-preload {
+    display: none;
+  }
+}
+
 .hero-script {
   font-family: var(--font-calligraphy), cursive;
   font-weight: 400;
