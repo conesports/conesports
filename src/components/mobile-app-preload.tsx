@@ -143,7 +143,7 @@ export function MobileAppPreload() {
 
       <div className="relative z-10 flex h-full min-h-0 min-w-0 w-full flex-col px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="flex justify-center pt-3">
-          <BrandLogo variant="light" className="h-12 w-auto max-h-12" priority />
+          <BrandLogo variant="light" layout="mark" className="h-20 w-auto" priority />
         </div>
 
         <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center text-center">
