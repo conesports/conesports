@@ -12,6 +12,7 @@ export function ShopFilters({
   sizes: string[];
   colors: string[];
   current: {
+    q?: string;
     category?: string;
     minPrice?: string;
     maxPrice?: string;
@@ -23,6 +24,7 @@ export function ShopFilters({
 }) {
   return (
     <form method="get" action={action} className="mb-6 flex flex-wrap gap-2 text-sm">
+      {current.q ? <input type="hidden" name="q" value={current.q} /> : null}
       {!action.includes("/shop/") ? (
         <select name="category" defaultValue={current.category ?? ""} className="border px-2 py-1">
           <option value="">All categories</option>

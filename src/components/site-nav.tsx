@@ -11,21 +11,25 @@ export function HeaderChrome({ loggedIn }: { loggedIn: boolean }) {
   const pathname = usePathname();
   const [openId, setOpenId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const navId = useId();
 
   useEffect(() => {
     setOpenId(null);
     setMobileOpen(false);
+    setSearchOpen(false);
     setMobileSection(null);
   }, [pathname]);
 
   useEffect(() => {
-    if (!mobileOpen) return;
+    if (!mobileOpen && !searchOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setMobileOpen(false);
+        setSearchOpen(false);
         setOpenId(null);
       }
     };
@@ -35,7 +39,12 @@ export function HeaderChrome({ loggedIn }: { loggedIn: boolean }) {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [mobileOpen]);
+  }, [mobileOpen, searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    searchRef.current?.focus();
+  }, [searchOpen]);
 
   function scheduleClose() {
     closeTimer.current = setTimeout(() => setOpenId(null), 180);
@@ -114,19 +123,29 @@ export function HeaderChrome({ loggedIn }: { loggedIn: boolean }) {
         <div className="flex items-center justify-end gap-3 sm:gap-4">
           <form action="/shop" method="get" className="hidden lg:block">
             <label className="sr-only" htmlFor="header-search">
-              Search the shop
+              Search
             </label>
             <input
               id="header-search"
               name="q"
               type="search"
               placeholder="Search"
+              required
               className="w-40 border-b border-zinc-300 bg-transparent py-1 text-sm outline-none placeholder:text-zinc-400 focus:border-black xl:w-52"
             />
           </form>
-          <Link href="/shop" className="lg:hidden" aria-label="Search the shop">
+          <button
+            type="button"
+            className="lg:hidden"
+            aria-label="Search"
+            aria-expanded={searchOpen}
+            onClick={() => {
+              setMobileOpen(false);
+              setSearchOpen(true);
+            }}
+          >
             <SearchIcon />
-          </Link>
+          </button>
           <Link href={loggedIn ? "/account" : "/login"} aria-label={loggedIn ? "Account" : "Log in"}>
             <UserIcon />
           </Link>
@@ -145,6 +164,36 @@ export function HeaderChrome({ loggedIn }: { loggedIn: boolean }) {
           onMouseLeave={scheduleClose}
         >
           <MegaPanel item={openItem} />
+        </div>
+      ) : null}
+
+      {searchOpen ? (
+        <div className="fixed inset-0 z-[60] bg-white lg:hidden">
+          <div className="flex h-16 items-center gap-3 border-b border-zinc-200 px-4">
+            <form action="/shop" method="get" className="flex min-w-0 flex-1 items-center gap-3">
+              <SearchIcon />
+              <label className="sr-only" htmlFor="mobile-search">
+                Search
+              </label>
+              <input
+                ref={searchRef}
+                id="mobile-search"
+                name="q"
+                type="search"
+                placeholder="Search kits, trainers, and gear"
+                required
+                autoComplete="off"
+                className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-zinc-400"
+              />
+            </form>
+            <button
+              type="button"
+              className="shrink-0 text-xs font-bold tracking-[0.14em] uppercase"
+              onClick={() => setSearchOpen(false)}
+            >
+              Close
+            </button>
+          </div>
         </div>
       ) : null}
 

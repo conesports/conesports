@@ -19,12 +19,17 @@ export default async function ShopPage({
   const flat = Object.fromEntries(
     Object.entries(sp).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
   );
+  const query = flat.q?.trim();
 
   return (
     <section>
       <PageBanner
-        title="Shop"
-        intro="Browse the ConeSports catalog. Prices in naira. Ships nationwide."
+        title={query ? "Search" : "Shop"}
+        intro={
+          query
+            ? `Results for “${query}”.`
+            : "Browse the ConeSports catalog. Prices in naira. Ships nationwide."
+        }
         image={BANNER.shop}
       />
       <ProductGrid searchParams={flat} />
