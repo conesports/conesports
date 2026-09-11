@@ -28,8 +28,11 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   icons: {
-    icon: "/images/cone-logo-dark.png",
-    apple: "/images/cone-logo-dark.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/images/cone-favicon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/images/cone-favicon.png",
   },
   openGraph: {
     siteName: SITE_NAME,
