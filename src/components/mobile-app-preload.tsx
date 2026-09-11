@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { isMobilePreloadViewport } from "@/lib/mobile-preload";
 
 const ENTER_DELAY_MS = 1200;
+const INIT_HOLD_MS = 5000;
 
 function lockPage() {
   const html = document.documentElement;
@@ -40,9 +41,11 @@ function unlockPage() {
 export function MobileAppPreload() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const armed = useRef(false);
   const readyAt = useRef(0);
+  const entering = useRef(false);
+  const enterTimer = useRef(0);
   const [open, setOpen] = useState(false);
+  const [initializing, setInitializing] = useState(false);
 
   useLayoutEffect(() => {
     if (!isMobilePreloadViewport()) return;
@@ -77,15 +80,6 @@ export function MobileAppPreload() {
     };
     video.addEventListener("ended", onEnded);
 
-    const unmute = () => {
-      video.muted = false;
-      video.defaultMuted = false;
-      video.volume = 1;
-      video.removeAttribute("muted");
-      void video.play().catch(() => {});
-    };
-    overlay?.addEventListener("pointerdown", unmute);
-
     const blockScroll = (event: TouchEvent) => {
       if ((event.target as HTMLElement | null)?.closest("button")) return;
       event.preventDefault();
@@ -93,28 +87,41 @@ export function MobileAppPreload() {
     overlay?.addEventListener("touchmove", blockScroll, { passive: false });
 
     return () => {
+      window.clearTimeout(enterTimer.current);
       video.removeEventListener("ended", onEnded);
-      overlay?.removeEventListener("pointerdown", unmute);
       overlay?.removeEventListener("touchmove", blockScroll);
     };
   }, [open]);
 
-  function armEnter(event: PointerEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-    if (Date.now() < readyAt.current) return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    armed.current = true;
+  function startSound() {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = false;
+    video.defaultMuted = false;
+    video.volume = 1;
+    video.removeAttribute("muted");
+    void video.play().catch(() => {});
   }
 
-  function onCta(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!armed.current || Date.now() < readyAt.current) return;
-
+  function enterSite() {
     videoRef.current?.pause();
     unlockPage();
     setOpen(false);
     window.dispatchEvent(new Event("conesports:preload-close"));
+  }
+
+  function beginEnter() {
+    if (entering.current || Date.now() < readyAt.current) return;
+    entering.current = true;
+    startSound();
+    setInitializing(true);
+    enterTimer.current = window.setTimeout(enterSite, INIT_HOLD_MS);
+  }
+
+  function onEnterPointer(event: PointerEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    beginEnter();
   }
 
   if (!open) return null;
@@ -126,6 +133,7 @@ export function MobileAppPreload() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="mobile-preload-title"
+      aria-busy={initializing}
     >
       <video
         ref={videoRef}
@@ -163,10 +171,14 @@ export function MobileAppPreload() {
           <button
             type="button"
             className="btn-solid mt-8 w-full max-w-xs py-4"
-            onPointerDown={armEnter}
-            onClick={onCta}
+            disabled={initializing}
+            onPointerDown={onEnterPointer}
+            onClick={(event) => {
+              event.preventDefault();
+              beginEnter();
+            }}
           >
-            Click Here
+            {initializing ? "Initializing" : "Click Here"}
           </button>
           <div className="mt-8 h-1.5 w-28 rounded-full bg-white/35" aria-hidden="true" />
         </div>
