@@ -72,7 +72,7 @@ export function HomeHero({ hero }: { hero: HomepageHero }) {
   }, [deferVideo]);
 
   return (
-    <section className="hero-stage relative isolate min-h-[100svh] overflow-hidden bg-black text-white">
+    <section className="hero-stage relative isolate min-h-[72svh] overflow-hidden bg-black text-white md:min-h-[100svh]">
       <Image
         src="/images/hero-poster.jpg"
         alt="ConeSports match kit, trainer, and bottle"
@@ -96,15 +96,15 @@ export function HomeHero({ hero }: { hero: HomepageHero }) {
           <source src="/videos/conevid.mp4" type="video/mp4" />
         </video>
       ) : null}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/10 md:via-black/55 md:to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/20 md:bg-gradient-to-r md:from-black md:via-black/55 md:to-transparent" />
       <div className="hero-glow pointer-events-none absolute -left-24 top-1/4 h-[60%] w-[55%] rounded-full" />
       <div className="hero-grain pointer-events-none absolute inset-0" />
 
-      <div className="relative flex min-h-[100svh] flex-col justify-center px-4 pb-28 pt-24 lg:px-10">
-        <p className="hero-rise text-[11px] font-bold tracking-[0.28em] text-white/70 uppercase">
+      <div className="relative flex min-h-[72svh] flex-col justify-center px-4 py-10 md:min-h-[100svh] md:px-4 md:py-0 md:pb-28 md:pt-24 lg:px-10">
+        <p className="hero-rise hidden text-[11px] font-bold tracking-[0.28em] text-white/70 uppercase md:block">
           ConeSports · Nigeria
         </p>
-        <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-tight uppercase sm:text-6xl lg:text-7xl xl:text-8xl">
+        <h1 className="max-w-4xl text-[2.6rem] font-bold leading-[0.92] tracking-tight uppercase sm:text-6xl md:mt-5 lg:text-7xl xl:text-8xl">
           {lines.map((line, i) => {
             const phrase = i === 0 ? splitScriptPhrase(line) : { lead: line, script: "" };
             return (
@@ -125,7 +125,7 @@ export function HomeHero({ hero }: { hero: HomepageHero }) {
         </h1>
         {hero.body ? (
           <p
-            className="hero-rise mt-6 max-w-xl text-base text-white/80 md:text-lg"
+            className="hero-rise mt-6 hidden max-w-xl text-base text-white/80 md:block md:text-lg"
             style={{ animationDelay: "480ms" }}
           >
             {hero.body}
@@ -133,26 +133,26 @@ export function HomeHero({ hero }: { hero: HomepageHero }) {
         ) : null}
 
         <div
-          className="hero-rise mt-8 flex flex-wrap gap-3"
+          className="hero-rise mt-8 flex w-full flex-col gap-3 md:flex-row md:flex-wrap"
           style={{ animationDelay: "620ms" }}
         >
           {hero.ctaLabel ? (
-            <Link href={hero.ctaHref} className="btn-outline">
+            <Link href={hero.ctaHref} className="btn-outline w-full md:w-auto">
               {hero.ctaLabel}
             </Link>
           ) : null}
           {hero.ctaSecondaryLabel ? (
-            <Link href={hero.ctaSecondaryHref} className="btn-solid">
+            <Link href={hero.ctaSecondaryHref} className="btn-solid w-full md:w-auto">
               {hero.ctaSecondaryLabel}
             </Link>
           ) : null}
-          <Link href="/sports/football" className="btn-ghost">
+          <Link href="/sports/football" className="btn-ghost hidden md:inline-flex">
             Shop football
           </Link>
         </div>
 
         <ul
-          className="hero-rise mt-10 flex flex-wrap gap-x-8 gap-y-2 text-[11px] font-bold tracking-[0.16em] text-white/55 uppercase"
+          className="hero-rise mt-10 hidden flex-wrap gap-x-8 gap-y-2 text-[11px] font-bold tracking-[0.16em] text-white/55 uppercase md:flex"
           style={{ animationDelay: "760ms" }}
         >
           <li>Ships nationwide</li>
@@ -161,7 +161,7 @@ export function HomeHero({ hero }: { hero: HomepageHero }) {
         </ul>
       </div>
 
-      <div className="absolute right-0 bottom-0 left-0 border-t border-white/10 bg-black/40 backdrop-blur-sm">
+      <div className="absolute right-0 bottom-0 left-0 hidden border-t border-white/10 bg-black/40 backdrop-blur-sm md:block">
         <div className="hero-marquee flex overflow-hidden py-3 text-[11px] font-bold tracking-[0.22em] whitespace-nowrap uppercase">
           <div className="hero-marquee-track flex shrink-0">
             {[...TICKER, ...TICKER].map((item, i) => (
