@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { HomepageHero } from "@/lib/homepage-content";
@@ -33,7 +34,37 @@ const TICKER = [
 ];
 
 export function HomeHero({ hero }: { hero: HomepageHero }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const lines = splitHeading(hero.heading);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.volume = 0;
+
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const preloadOpen = () => document.documentElement.dataset.mobilePreload === "open";
+    const syncPlayback = () => {
+      if (motion.matches || preloadOpen()) {
+        video.pause();
+        return;
+      }
+      void video.play().catch(() => {});
+    };
+
+    syncPlayback();
+    motion.addEventListener("change", syncPlayback);
+    window.addEventListener("conesports:preload-open", syncPlayback);
+    window.addEventListener("conesports:preload-close", syncPlayback);
+    return () => {
+      motion.removeEventListener("change", syncPlayback);
+      window.removeEventListener("conesports:preload-open", syncPlayback);
+      window.removeEventListener("conesports:preload-close", syncPlayback);
+    };
+  }, []);
 
   return (
     <section className="hero-stage relative isolate min-h-[100svh] overflow-hidden bg-black text-white">
@@ -43,8 +74,21 @@ export function HomeHero({ hero }: { hero: HomepageHero }) {
         fill
         priority
         sizes="100vw"
-        className="hero-zoom object-cover object-[78%_center] md:object-[72%_center]"
+        className="object-cover object-center"
       />
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-cover object-center motion-reduce:hidden"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/images/hero-bg.png"
+        aria-hidden="true"
+      >
+        <source src="/videos/conevid.mp4" type="video/mp4" />
+      </video>
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/10 md:via-black/55 md:to-transparent" />
       <div className="hero-glow pointer-events-none absolute -left-24 top-1/4 h-[60%] w-[55%] rounded-full" />
       <div className="hero-grain pointer-events-none absolute inset-0" />
