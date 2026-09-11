@@ -10,46 +10,33 @@ const INIT_HOLD_MS = 5000;
 function lockPage() {
   const html = document.documentElement;
   const body = document.body;
-  const scrollY = window.scrollY;
   html.dataset.mobilePreload = "open";
   html.style.overflow = "hidden";
-  body.dataset.preloadScroll = String(scrollY);
-  body.style.position = "fixed";
-  body.style.top = `-${scrollY}px`;
-  body.style.left = "0";
-  body.style.right = "0";
-  body.style.width = "100%";
   body.style.overflow = "hidden";
 }
 
 function unlockPage() {
   const html = document.documentElement;
   const body = document.body;
-  const scrollY = Number(body.dataset.preloadScroll || "0");
   delete html.dataset.mobilePreload;
   html.style.overflow = "";
-  body.style.position = "";
-  body.style.top = "";
-  body.style.left = "";
-  body.style.right = "";
-  body.style.width = "";
   body.style.overflow = "";
-  delete body.dataset.preloadScroll;
-  window.scrollTo(0, scrollY);
 }
 
 export function MobileAppPreload() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const readyAt = useRef(0);
+  const readyAt = useRef(Number.POSITIVE_INFINITY);
   const entering = useRef(false);
   const enterTimer = useRef(0);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [initializing, setInitializing] = useState(false);
 
   useLayoutEffect(() => {
-    if (!isMobilePreloadViewport()) return;
-    setOpen(true);
+    if (!isMobilePreloadViewport()) {
+      setOpen(false);
+      return;
+    }
     lockPage();
     readyAt.current = Date.now() + ENTER_DELAY_MS;
     window.dispatchEvent(new Event("conesports:preload-open"));
@@ -65,6 +52,7 @@ export function MobileAppPreload() {
     video.playsInline = true;
     video.setAttribute("playsinline", "true");
     video.setAttribute("webkit-playsinline", "true");
+    video.preload = "auto";
     video.muted = true;
     video.defaultMuted = true;
 
@@ -153,20 +141,24 @@ export function MobileAppPreload() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/25 to-black/90" />
       <div className="hero-glow pointer-events-none absolute -left-16 top-1/3 h-[45%] w-[70%] rounded-full" />
 
-      <div className="relative flex h-full min-h-0 w-full flex-col px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <div className="relative z-10 flex h-full min-h-0 min-w-0 w-full flex-col px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="flex justify-center pt-3">
-          <BrandLogo variant="light" className="h-12 w-auto" priority />
+          <BrandLogo variant="light" className="h-12 w-auto max-h-12" priority />
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
-          <p className="text-[11px] font-bold tracking-[0.32em] text-white/65 uppercase">
+        <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center text-center">
+          <p className="px-2 text-[10px] font-bold tracking-[0.22em] text-white/65 uppercase sm:text-[11px] sm:tracking-[0.32em]">
             ConeSports · Nigeria
           </p>
           <h1
             id="mobile-preload-title"
-            className="mt-3 max-w-[14ch] text-[clamp(2.6rem,12vw,3.6rem)] font-bold leading-[0.92] tracking-tight uppercase"
+            className="mobile-preload-title mt-3 w-full font-bold uppercase"
           >
-            Shop The ConeSports Experience
+            Shop The
+            <br />
+            ConeSports
+            <br />
+            Experience
           </h1>
           <button
             type="button"

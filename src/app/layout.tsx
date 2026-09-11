@@ -49,8 +49,19 @@ export default function RootLayout({
     <html
       lang="en-NG"
       className={`${geistSans.variable} ${geistMono.variable} ${greatVibes.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-950">
+        <style
+          dangerouslySetInnerHTML={{
+            __html: 'html[data-mobile-preload=open]{background:#000}html[data-mobile-preload=open],html[data-mobile-preload=open] body{overflow:hidden}html[data-mobile-preload=open] body{background:#000}.mobile-preload{position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;display:flex;flex-direction:column;overflow:hidden;background:#000;color:#fff}@media (min-width:1024px){.mobile-preload{display:none!important}}',
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: '(function(){try{var p=location.pathname;if(p==="/admin"||p.indexOf("/admin/")===0)return;if(window.matchMedia("(max-width:1023px)").matches){document.documentElement.setAttribute("data-mobile-preload","open")}}catch(e){}})();',
+          }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
