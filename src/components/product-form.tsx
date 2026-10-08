@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AdminBackLink, AdminCard } from "@/components/admin-page-header";
 import { slugify, koboToNaira } from "@/lib/money";
 
 type Category = { id: string; name: string };
@@ -121,240 +122,308 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="max-w-2xl space-y-4">
-      <label className="block text-sm">
-        Name
-        <input
-          className="mt-1 w-full border px-2 py-1"
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          required
-        />
-      </label>
-      <label className="block text-sm">
-        Slug
-        <input
-          className="mt-1 w-full border px-2 py-1"
-          value={slug}
-          onChange={(e) => {
-            setSlugTouched(true);
-            setSlug(e.target.value);
-          }}
-          required
-        />
-      </label>
-      <label className="block text-sm">
-        Description
-        <textarea
-          className="mt-1 w-full border px-2 py-1"
-          rows={4}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </label>
-      <div className="grid grid-cols-3 gap-3">
-        <label className="block text-sm">
-          Price (NGN)
-          <input
-            className="mt-1 w-full border px-2 py-1"
-            type="number"
-            min="0"
-            step="1"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          Price USD
-          <input
-            className="mt-1 w-full border px-2 py-1"
-            type="number"
-            min="0"
-            step="0.01"
-            value={priceUSD}
-            onChange={(e) => setPriceUSD(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          Discount %
-          <input
-            className="mt-1 w-full border px-2 py-1"
-            type="number"
-            min="0"
-            max="100"
-            value={discountPercent}
-            onChange={(e) => setDiscountPercent(e.target.value)}
-          />
-        </label>
-      </div>
-      <fieldset className="space-y-1 text-sm">
-        <legend>Categories</legend>
-        {categories.map((c) => (
-          <label key={c.id} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={categoryIds.includes(c.id)}
-              onChange={(e) => {
-                setCategoryIds((prev) =>
-                  e.target.checked
-                    ? [...prev, c.id]
-                    : prev.filter((id) => id !== c.id),
-                );
-              }}
-            />
-            {c.name}
-          </label>
-        ))}
-      </fieldset>
-      <div className="flex gap-4 text-sm">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={featured}
-            onChange={(e) => setFeatured(e.target.checked)}
-          />
-          Featured
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={bestSeller}
-            onChange={(e) => setBestSeller(e.target.checked)}
-          />
-          Best seller
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={priceConfirmed}
-            onChange={(e) => setPriceConfirmed(e.target.checked)}
-          />
-          Price confirmed
-        </label>
-      </div>
-      <div className="space-y-2">
-        <p className="text-sm font-medium">Images</p>
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            try {
-              await uploadImage(file);
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Upload failed");
-            }
-            e.target.value = "";
-          }}
-        />
-        <ul className="space-y-1">
-          {images.map((url, index) => (
-            <li
-              key={`${url}-${index}`}
-              draggable
-              onDragStart={() => setDragIndex(index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => {
-                if (dragIndex == null || dragIndex === index) return;
-                setImages((prev) => {
-                  const next = [...prev];
-                  const [moved] = next.splice(dragIndex, 1);
-                  next.splice(index, 0, moved);
-                  return next;
-                });
-                setDragIndex(null);
-              }}
-              className="flex items-center gap-2 border px-2 py-1 text-xs"
-            >
-              <span>⋮⋮</span>
-              <span className="truncate">{url}</span>
+    <form onSubmit={onSubmit} className="space-y-5">
+      <AdminBackLink href="/admin/products" />
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
+        <div className="space-y-5">
+          <AdminCard title="Details">
+            <div className="space-y-4">
+              <label className="admin-field">
+                Name
+                <input
+                  value={name}
+                  onChange={(e) => onNameChange(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="admin-field">
+                Slug
+                <input
+                  value={slug}
+                  onChange={(e) => {
+                    setSlugTouched(true);
+                    setSlug(e.target.value);
+                  }}
+                  required
+                />
+              </label>
+              <label className="admin-field">
+                Description
+                <textarea
+                  rows={6}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </label>
+            </div>
+          </AdminCard>
+
+          <AdminCard title="Pricing">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <label className="admin-field">
+                Price (NGN)
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </label>
+              <label className="admin-field">
+                Price USD
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={priceUSD}
+                  onChange={(e) => setPriceUSD(e.target.value)}
+                />
+              </label>
+              <label className="admin-field">
+                Discount %
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={discountPercent}
+                  onChange={(e) => setDiscountPercent(e.target.value)}
+                />
+              </label>
+            </div>
+          </AdminCard>
+
+          <AdminCard title="Categories">
+            {categories.length ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {categories.map((c) => (
+                  <label
+                    key={c.id}
+                    className="flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={categoryIds.includes(c.id)}
+                      onChange={(e) => {
+                        setCategoryIds((prev) =>
+                          e.target.checked
+                            ? [...prev, c.id]
+                            : prev.filter((id) => id !== c.id),
+                        );
+                      }}
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500">No categories yet.</p>
+            )}
+          </AdminCard>
+
+          <AdminCard title="Variants">
+            <div className="space-y-3">
+              {variants.map((row, index) => (
+                <div
+                  key={index}
+                  className="grid gap-2 rounded-xl border border-zinc-200 p-3 sm:grid-cols-[1fr_1fr_6rem_auto]"
+                >
+                  <input
+                    placeholder="Size"
+                    value={row.size}
+                    onChange={(e) =>
+                      setVariants((prev) =>
+                        prev.map((v, i) =>
+                          i === index ? { ...v, size: e.target.value } : v,
+                        ),
+                      )
+                    }
+                  />
+                  <input
+                    placeholder="Color"
+                    value={row.color}
+                    onChange={(e) =>
+                      setVariants((prev) =>
+                        prev.map((v, i) =>
+                          i === index ? { ...v, color: e.target.value } : v,
+                        ),
+                      )
+                    }
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Stock"
+                    value={row.stock}
+                    onChange={(e) =>
+                      setVariants((prev) =>
+                        prev.map((v, i) =>
+                          i === index
+                            ? { ...v, stock: Number(e.target.value) || 0 }
+                            : v,
+                        ),
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="rounded-xl px-3 py-2 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-black"
+                    onClick={() =>
+                      setVariants((prev) => prev.filter((_, i) => i !== index))
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
               <button
                 type="button"
-                className="ml-auto underline"
+                className="rounded-xl border border-dashed border-zinc-300 px-3 py-2.5 text-sm font-semibold text-zinc-600 transition hover:border-zinc-400 hover:text-black"
                 onClick={() =>
-                  setImages((prev) => prev.filter((_, i) => i !== index))
+                  setVariants((prev) => [...prev, { size: "", color: "", stock: 0 }])
                 }
               >
-                Remove
+                Add variant
               </button>
-            </li>
-          ))}
-        </ul>
+            </div>
+          </AdminCard>
+        </div>
+
+        <div className="space-y-5">
+          <AdminCard title="Images">
+            <div className="space-y-4">
+              {images[0] ? (
+                <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={images[0]}
+                    alt=""
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                </div>
+              ) : null}
+
+              <label className="admin-upload cursor-pointer">
+                <span>
+                  {images.length ? "Add another image" : "Upload product image"}
+                  <br />
+                  <span className="text-xs text-zinc-400">JPEG, PNG, WebP, GIF</span>
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      await uploadImage(file);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Upload failed");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+
+              {images.length > 0 ? (
+                <ul className="grid grid-cols-3 gap-2">
+                  {images.map((url, index) => (
+                    <li
+                      key={`${url}-${index}`}
+                      draggable
+                      onDragStart={() => setDragIndex(index)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (dragIndex == null || dragIndex === index) return;
+                        setImages((prev) => {
+                          const next = [...prev];
+                          const [moved] = next.splice(dragIndex, 1);
+                          next.splice(index, 0, moved);
+                          return next;
+                        });
+                        setDragIndex(null);
+                      }}
+                      className="group relative overflow-hidden rounded-xl border border-zinc-200"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="aspect-square w-full object-cover" />
+                      <button
+                        type="button"
+                        className="absolute inset-x-0 bottom-0 bg-black/70 py-1 text-[10px] font-bold tracking-wide text-white uppercase opacity-0 transition group-hover:opacity-100"
+                        onClick={() =>
+                          setImages((prev) => prev.filter((_, i) => i !== index))
+                        }
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="text-xs text-zinc-500">Drag thumbnails to reorder. First image is the cover.</p>
+            </div>
+          </AdminCard>
+
+          <AdminCard title="Visibility">
+            <div className="space-y-2">
+              {[
+                {
+                  checked: featured,
+                  onChange: setFeatured,
+                  label: "Featured on homepage",
+                },
+                {
+                  checked: bestSeller,
+                  onChange: setBestSeller,
+                  label: "Best seller",
+                },
+                {
+                  checked: priceConfirmed,
+                  onChange: setPriceConfirmed,
+                  label: "Price confirmed",
+                },
+              ].map((item) => (
+                <label
+                  key={item.label}
+                  className="flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    checked={item.checked}
+                    onChange={(e) => item.onChange(e.target.checked)}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </div>
+          </AdminCard>
+        </div>
       </div>
-      <div className="space-y-2">
-        <p className="text-sm font-medium">Variants</p>
-        {variants.map((row, index) => (
-          <div key={index} className="grid grid-cols-4 gap-2">
-            <input
-              className="border px-2 py-1 text-sm"
-              placeholder="Size"
-              value={row.size}
-              onChange={(e) =>
-                setVariants((prev) =>
-                  prev.map((v, i) =>
-                    i === index ? { ...v, size: e.target.value } : v,
-                  ),
-                )
-              }
-            />
-            <input
-              className="border px-2 py-1 text-sm"
-              placeholder="Color"
-              value={row.color}
-              onChange={(e) =>
-                setVariants((prev) =>
-                  prev.map((v, i) =>
-                    i === index ? { ...v, color: e.target.value } : v,
-                  ),
-                )
-              }
-            />
-            <input
-              className="border px-2 py-1 text-sm"
-              type="number"
-              min="0"
-              placeholder="Stock"
-              value={row.stock}
-              onChange={(e) =>
-                setVariants((prev) =>
-                  prev.map((v, i) =>
-                    i === index
-                      ? { ...v, stock: Number(e.target.value) || 0 }
-                      : v,
-                  ),
-                )
-              }
-            />
-            <button
-              type="button"
-              className="text-sm underline"
-              onClick={() =>
-                setVariants((prev) => prev.filter((_, i) => i !== index))
-              }
-            >
-              Remove
-            </button>
-          </div>
-        ))}
+
+      {error ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
         <button
           type="button"
-          className="text-sm underline"
-          onClick={() =>
-            setVariants((prev) => [...prev, { size: "", color: "", stock: 0 }])
-          }
+          className="rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition hover:text-black"
+          onClick={() => router.push("/admin/products")}
         >
-          Add variant
+          Discard
+        </button>
+        <button
+          type="submit"
+          disabled={pending}
+          className="btn-solid rounded-xl disabled:opacity-60"
+        >
+          {pending ? "Saving…" : productId ? "Save product" : "Add product"}
         </button>
       </div>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className="border px-3 py-1.5 text-sm"
-      >
-        {pending ? "Saving…" : "Save"}
-      </button>
     </form>
   );
 }

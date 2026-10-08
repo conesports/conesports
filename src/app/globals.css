@@ -228,6 +228,44 @@ html[data-mobile-preload="open"] body {
   text-transform: uppercase;
 }
 
+.admin-canvas {
+  --admin-surface: #f3f4f6;
+  --admin-card: #ffffff;
+  --admin-border: #e5e7eb;
+  --admin-radius: 14px;
+}
+
+.admin-card {
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  padding: 1.25rem 1.35rem;
+}
+
+@media (min-width: 768px) {
+  .admin-card {
+    padding: 1.4rem 1.5rem;
+  }
+}
+
+.admin-card-title {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.admin-field {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.admin-field > :is(input, textarea, select) {
+  margin-top: 0.45rem;
+}
+
 .admin-canvas table {
   width: 100%;
   border-collapse: collapse;
@@ -261,9 +299,11 @@ html[data-mobile-preload="open"] body {
 .admin-canvas textarea {
   border: 1px solid #d4d4d8;
   background: #fff;
-  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
   font-size: 0.875rem;
   outline: none;
+  width: 100%;
 }
 
 .admin-canvas input:focus,
@@ -276,9 +316,29 @@ html[data-mobile-preload="open"] body {
   border: 1px solid #111;
   background: #111;
   color: #fff;
-  padding: 0.4rem 0.85rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.admin-upload {
+  display: flex;
+  min-height: 8.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed #d4d4d8;
+  border-radius: 12px;
+  background: #fafafa;
+  color: #71717a;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.admin-upload:hover {
+  border-color: #a1a1aa;
+  background: #f4f4f5;
 }
