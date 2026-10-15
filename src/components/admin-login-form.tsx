@@ -10,6 +10,7 @@ export function AdminLoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/admin";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,13 +59,24 @@ export function AdminLoginForm() {
       </label>
       <label className="block text-sm text-white/80">
         Password
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="mt-2 w-full border border-white/20 bg-black px-3 py-3 text-sm text-white outline-none focus:border-white"
-        />
+        <span className="relative mt-2 block">
+          <input
+            name="password"
+            type={showPassword ? "text" : "password"}
+            required
+            autoComplete="current-password"
+            className="w-full border border-white/20 bg-black px-3 py-3 pr-16 text-sm text-white outline-none focus:border-white"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute inset-y-0 right-0 px-3 text-xs font-bold tracking-[0.12em] text-white/60 uppercase transition hover:text-white"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </span>
       </label>
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
       <button type="submit" disabled={pending} className="btn-solid w-full disabled:opacity-60">
