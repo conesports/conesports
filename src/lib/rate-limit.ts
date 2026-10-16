@@ -92,10 +92,34 @@ export function csrfBlocked(req: Request) {
   if (!pathname.startsWith("/api/")) return false;
 
   const origin = req.headers.get("origin");
-  const allowed = appUrl();
   if (origin) {
     try {
-      return new URL(origin).origin !== new URL(allowed).origin;
+      const incoming = new URL(origin).origin;
+      const allowed = new Set<string>();
+      try {
+        allowed.add(new URL(appUrl()).origin);
+      } catch {
+        /* ignore */
+      }
+      try {
+        allowed.add(new URL(req.url).origin);
+      } catch {
+        /* ignore */
+      }
+      // NextAuth may rewrite req.url to AUTH_URL; Host still reflects the browser.
+      const host =
+        req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+        req.headers.get("host");
+      const proto =
+        req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "http";
+      if (host) {
+        try {
+          allowed.add(new URL(`${proto}://${host}`).origin);
+        } catch {
+          /* ignore */
+        }
+      }
+      return !allowed.has(incoming);
     } catch {
       return true;
     }

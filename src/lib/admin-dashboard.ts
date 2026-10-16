@@ -1,10 +1,9 @@
 import type { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { lagosDayKey } from "@/lib/admin-format";
-import { getIdleCartMinutes, idleCartCutoff } from "@/lib/settings";
+import { idleCartCutoff } from "@/lib/settings";
 
 const PAID: OrderStatus[] = ["PAID", "PACKED", "SHIPPED", "DELIVERED"];
-const PIPELINE: OrderStatus[] = ["PAID", "PACKED", "SHIPPED"];
 const LOW_STOCK = 5;
 
 export type DashboardAlert = {
@@ -133,6 +132,36 @@ const EMPTY: DashboardSnapshot = {
   messageRows: [],
 };
 
+type KpiRow = {
+  idleRaw: string | null;
+  orders: number;
+  paidInProgress: number;
+  pendingPayment: number;
+  delivered: number;
+  cancelled: number;
+  abandonedCarts: number;
+  customers: number;
+  products: number;
+  variants: number;
+  pricePending: number;
+  categories: number;
+  pendingReviews: number;
+  messages: number;
+  lowStock: number;
+  activeDiscounts: number;
+  revenueToday: number;
+  revenue7d: number;
+  revenue30d: number;
+  revenueAll: number;
+  ordersToday: number;
+  orders7d: number;
+  orders30d: number;
+  paid30: number;
+  statusCounts: Array<{ status: OrderStatus; count: number }> | null;
+  gateways: Array<{ gateway: string | null; count: number; revenue: number }> | null;
+  chartOrders: Array<{ createdAt: string | Date; total: number }> | null;
+};
+
 function startOfLagosDay(now = new Date()) {
   const key = lagosDayKey(now);
   return new Date(`${key}T00:00:00+01:00`);
@@ -163,138 +192,145 @@ function emptySeries(): DashboardDay[] {
   return days;
 }
 
+function num(value: unknown) {
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return Number(value) || 0;
+  return 0;
+}
+
 export async function loadAdminDashboard(): Promise<DashboardSnapshot> {
   try {
-    const idleMinutes = await getIdleCartMinutes();
-    const idleCutoff = idleCartCutoff(idleMinutes);
     const today = startOfLagosDay();
     const week = daysAgo(7);
     const month = daysAgo(30);
     const chartStart = daysAgo(13);
+    // Default cutoff; refined after KPI reads the store setting in the same query.
+    const fallbackIdle = 30;
+    const idleCutoff = idleCartCutoff(fallbackIdle);
 
-    const [
-      orderCount,
-      paidInProgress,
-      pendingPayment,
-      delivered,
-      cancelled,
-      abandonedCarts,
-      customerCount,
-      productCount,
-      variantCount,
-      pricePending,
-      categoryCount,
-      pendingReviews,
-      messageCount,
-      lowStock,
-      activeDiscounts,
-      revenueAll,
-      revenueToday,
-      revenue7d,
-      revenue30d,
-      ordersToday,
-      orders7d,
-      orders30d,
-      statusGroups,
-      gatewayGroups,
-      chartOrders,
-      recentOrders,
-      lowStockRows,
-      pendingReviewRows,
-      abandonedRows,
-      messageRows,
-    ] = await Promise.all([
-      prisma.order.count(),
-      prisma.order.count({ where: { status: { in: PIPELINE } } }),
-      prisma.order.count({ where: { status: "PENDING" } }),
-      prisma.order.count({ where: { status: "DELIVERED" } }),
-      prisma.order.count({ where: { status: { in: ["CANCELLED", "REFUNDED"] } } }),
-      prisma.abandonedCart.count({
-        where: { recoveredAt: null, updatedAt: { lte: idleCutoff } },
-      }),
-      prisma.customer.count(),
-      prisma.product.count(),
-      prisma.variant.count(),
-      prisma.product.count({ where: { priceConfirmed: false } }),
-      prisma.category.count(),
-      prisma.review.count({ where: { status: "PENDING" } }),
-      prisma.contactMessage.count(),
-      prisma.variant.count({ where: { stock: { lte: LOW_STOCK } } }),
-      prisma.discount.count({ where: { active: true } }),
-      prisma.order.aggregate({
-        _sum: { total: true },
-        where: { status: { in: PAID } },
-      }),
-      prisma.order.aggregate({
-        _sum: { total: true },
-        _count: true,
-        where: { status: { in: PAID }, createdAt: { gte: today } },
-      }),
-      prisma.order.aggregate({
-        _sum: { total: true },
-        where: { status: { in: PAID }, createdAt: { gte: week } },
-      }),
-      prisma.order.aggregate({
-        _sum: { total: true },
-        _count: true,
-        where: { status: { in: PAID }, createdAt: { gte: month } },
-      }),
-      prisma.order.count({ where: { createdAt: { gte: today } } }),
-      prisma.order.count({ where: { createdAt: { gte: week } } }),
-      prisma.order.count({ where: { createdAt: { gte: month } } }),
-      prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
-      prisma.order.groupBy({
-        by: ["gateway"],
-        where: { status: { in: PAID } },
-        _count: { _all: true },
-        _sum: { total: true },
-      }),
-      prisma.order.findMany({
-        where: { status: { in: PAID }, createdAt: { gte: chartStart } },
-        select: { createdAt: true, total: true },
-      }),
-      prisma.order.findMany({
-        take: 8,
-        orderBy: { createdAt: "desc" },
-        include: { customer: true, items: true },
-      }),
-      prisma.variant.findMany({
-        where: { stock: { lte: LOW_STOCK } },
-        take: 8,
-        orderBy: { stock: "asc" },
-        include: { product: { select: { id: true, name: true } } },
-      }),
-      prisma.review.findMany({
-        where: { status: "PENDING" },
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: {
-          product: { select: { name: true } },
-          customer: { select: { name: true, email: true } },
-        },
-      }),
-      prisma.abandonedCart.findMany({
-        where: { recoveredAt: null, updatedAt: { lte: idleCutoff } },
-        take: 5,
-        orderBy: { updatedAt: "desc" },
-      }),
-      prisma.contactMessage.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+    const [kpi] = await prisma.$queryRaw<KpiRow[]>`
+      SELECT
+        (SELECT value FROM "StoreSetting" WHERE key = 'idle_cart_minutes' LIMIT 1) AS "idleRaw",
+        (SELECT COUNT(*)::int FROM "Order") AS orders,
+        (SELECT COUNT(*)::int FROM "Order" WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED')) AS "paidInProgress",
+        (SELECT COUNT(*)::int FROM "Order" WHERE status::text = 'PENDING') AS "pendingPayment",
+        (SELECT COUNT(*)::int FROM "Order" WHERE status::text = 'DELIVERED') AS delivered,
+        (SELECT COUNT(*)::int FROM "Order" WHERE status::text IN ('CANCELLED', 'REFUNDED')) AS cancelled,
+        (SELECT COUNT(*)::int FROM "AbandonedCart"
+          WHERE "recoveredAt" IS NULL AND "updatedAt" <= ${idleCutoff}) AS "abandonedCarts",
+        (SELECT COUNT(*)::int FROM "Customer") AS customers,
+        (SELECT COUNT(*)::int FROM "Product") AS products,
+        (SELECT COUNT(*)::int FROM "Variant") AS variants,
+        (SELECT COUNT(*)::int FROM "Product" WHERE "priceConfirmed" = false) AS "pricePending",
+        (SELECT COUNT(*)::int FROM "Category") AS categories,
+        (SELECT COUNT(*)::int FROM "Review" WHERE status::text = 'PENDING') AS "pendingReviews",
+        (SELECT COUNT(*)::int FROM "ContactMessage") AS messages,
+        (SELECT COUNT(*)::int FROM "Variant" WHERE stock <= ${LOW_STOCK}) AS "lowStock",
+        (SELECT COUNT(*)::int FROM "Discount" WHERE active = true) AS "activeDiscounts",
+        (SELECT COALESCE(SUM(total), 0)::bigint FROM "Order"
+          WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED', 'DELIVERED') AND "createdAt" >= ${today}) AS "revenueToday",
+        (SELECT COALESCE(SUM(total), 0)::bigint FROM "Order"
+          WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED', 'DELIVERED') AND "createdAt" >= ${week}) AS "revenue7d",
+        (SELECT COALESCE(SUM(total), 0)::bigint FROM "Order"
+          WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED', 'DELIVERED') AND "createdAt" >= ${month}) AS "revenue30d",
+        (SELECT COALESCE(SUM(total), 0)::bigint FROM "Order"
+          WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED', 'DELIVERED')) AS "revenueAll",
+        (SELECT COUNT(*)::int FROM "Order" WHERE "createdAt" >= ${today}) AS "ordersToday",
+        (SELECT COUNT(*)::int FROM "Order" WHERE "createdAt" >= ${week}) AS "orders7d",
+        (SELECT COUNT(*)::int FROM "Order" WHERE "createdAt" >= ${month}) AS "orders30d",
+        (SELECT COUNT(*)::int FROM "Order"
+          WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED', 'DELIVERED') AND "createdAt" >= ${month}) AS "paid30",
+        (SELECT COALESCE(json_agg(json_build_object('status', status, 'count', count)), '[]'::json)
+          FROM (SELECT status, COUNT(*)::int AS count FROM "Order" GROUP BY status) s
+        ) AS "statusCounts",
+        (SELECT COALESCE(json_agg(json_build_object(
+            'gateway', gateway,
+            'count', count,
+            'revenue', revenue
+          )), '[]'::json)
+          FROM (
+            SELECT gateway, COUNT(*)::int AS count, COALESCE(SUM(total), 0)::bigint AS revenue
+            FROM "Order"
+            WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED', 'DELIVERED')
+            GROUP BY gateway
+          ) g
+        ) AS "gateways",
+        (SELECT COALESCE(json_agg(json_build_object('createdAt', "createdAt", 'total', total)), '[]'::json)
+          FROM "Order"
+          WHERE status::text IN ('PAID', 'PACKED', 'SHIPPED', 'DELIVERED')
+            AND "createdAt" >= ${chartStart}
+        ) AS "chartOrders"
+    `;
+
+    const parsedIdle = Number(kpi.idleRaw);
+    const idleMinutes =
+      Number.isFinite(parsedIdle) && parsedIdle > 0 ? Math.round(parsedIdle) : fallbackIdle;
+    const listCutoff = idleMinutes === fallbackIdle ? idleCutoff : idleCartCutoff(idleMinutes);
+
+    const [recentOrders, lowStockRows, pendingReviewRows, abandonedRows, messageRows] =
+      await Promise.all([
+        prisma.order.findMany({
+          take: 8,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            status: true,
+            total: true,
+            gateway: true,
+            createdAt: true,
+            customer: { select: { name: true } },
+            items: { select: { quantity: true } },
+          },
+        }),
+        prisma.variant.findMany({
+          where: { stock: { lte: LOW_STOCK } },
+          take: 8,
+          orderBy: { stock: "asc" },
+          include: { product: { select: { id: true, name: true } } },
+        }),
+        prisma.review.findMany({
+          where: { status: "PENDING" },
+          take: 5,
+          orderBy: { createdAt: "desc" },
+          include: {
+            product: { select: { name: true } },
+            customer: { select: { name: true, email: true } },
+          },
+        }),
+        prisma.abandonedCart.findMany({
+          where: { recoveredAt: null, updatedAt: { lte: listCutoff } },
+          take: 5,
+          orderBy: { updatedAt: "desc" },
+        }),
+        prisma.contactMessage.findMany({
+          take: 5,
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
 
     const series = emptySeries();
     const byDay = new Map(series.map((day) => [day.key, day]));
-    for (const order of chartOrders) {
-      const day = byDay.get(lagosDayKey(order.createdAt));
+    for (const order of kpi.chartOrders ?? []) {
+      const createdAt = order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt);
+      const day = byDay.get(lagosDayKey(createdAt));
       if (!day) continue;
       day.orders += 1;
-      day.revenue += order.total;
+      day.revenue += num(order.total);
     }
 
-    const rev30 = revenue30d._sum.total ?? 0;
-    const paid30 = revenue30d._count;
+    const revenue30d = num(kpi.revenue30d);
+    const paid30 = num(kpi.paid30);
+    const pendingPayment = num(kpi.pendingPayment);
+    const paidInProgress = num(kpi.paidInProgress);
+    const abandonedCarts = num(kpi.abandonedCarts);
+    const pricePending = num(kpi.pricePending);
+    const pendingReviews = num(kpi.pendingReviews);
+    const lowStock = num(kpi.lowStock);
+    const messageCount = num(kpi.messages);
+
     const alerts: DashboardAlert[] = [
       pendingPayment
         ? { href: "/admin/orders?status=PENDING", label: "Awaiting payment", count: pendingPayment, tone: "warn" }
@@ -322,37 +358,37 @@ export async function loadAdminDashboard(): Promise<DashboardSnapshot> {
     return {
       available: true,
       idleMinutes,
-      orders: orderCount,
+      orders: num(kpi.orders),
       paidInProgress,
       pendingPayment,
-      delivered,
-      cancelled,
+      delivered: num(kpi.delivered),
+      cancelled: num(kpi.cancelled),
       abandonedCarts,
-      customers: customerCount,
-      products: productCount,
-      variants: variantCount,
+      customers: num(kpi.customers),
+      products: num(kpi.products),
+      variants: num(kpi.variants),
       pricePending,
-      categories: categoryCount,
+      categories: num(kpi.categories),
       pendingReviews,
       messages: messageCount,
       lowStock,
-      activeDiscounts,
-      revenueToday: revenueToday._sum.total ?? 0,
-      revenue7d: revenue7d._sum.total ?? 0,
-      revenue30d: rev30,
-      revenueAll: revenueAll._sum.total ?? 0,
-      ordersToday,
-      orders7d,
-      orders30d,
-      aov30d: paid30 ? Math.round(rev30 / paid30) : 0,
-      statusCounts: statusGroups.map((row) => ({
+      activeDiscounts: num(kpi.activeDiscounts),
+      revenueToday: num(kpi.revenueToday),
+      revenue7d: num(kpi.revenue7d),
+      revenue30d,
+      revenueAll: num(kpi.revenueAll),
+      ordersToday: num(kpi.ordersToday),
+      orders7d: num(kpi.orders7d),
+      orders30d: num(kpi.orders30d),
+      aov30d: paid30 ? Math.round(revenue30d / paid30) : 0,
+      statusCounts: (kpi.statusCounts ?? []).map((row) => ({
         status: row.status,
-        count: row._count._all,
+        count: num(row.count),
       })),
-      gateways: gatewayGroups.map((row) => ({
+      gateways: (kpi.gateways ?? []).map((row) => ({
         gateway: row.gateway ?? "unset",
-        count: row._count._all,
-        revenue: row._sum.total ?? 0,
+        count: num(row.count),
+        revenue: num(row.revenue),
       })),
       series,
       alerts,

@@ -13,11 +13,63 @@ const ALLOWED_IMAGES = new Set([
 ]);
 const ALLOWED_VIDEOS = new Set(["video/mp4", "video/webm"]);
 
+async function ensureBucket(
+  supabase: ReturnType<typeof createServiceSupabase>,
+) {
+  const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+  if (listError) {
+    // Older projects sometimes block listBuckets; try create and ignore "exists".
+    const { error: createError } = await supabase.storage.createBucket(BUCKET, {
+      public: true,
+      fileSizeLimit: MAX_VIDEO_BYTES,
+    });
+    if (
+      createError &&
+      !/already exists|duplicate|Bucket already exists/i.test(createError.message)
+    ) {
+      throw new Error(
+        `Storage bucket unavailable: ${listError.message}. Create "${BUCKET}" as a public bucket in Supabase → Storage.`,
+      );
+    }
+    return;
+  }
+
+  if (!buckets?.some((b) => b.name === BUCKET)) {
+    const { error: createError } = await supabase.storage.createBucket(BUCKET, {
+      public: true,
+      fileSizeLimit: MAX_VIDEO_BYTES,
+    });
+    if (
+      createError &&
+      !/already exists|duplicate|Bucket already exists/i.test(createError.message)
+    ) {
+      throw new Error(
+        `Could not create storage bucket "${BUCKET}": ${createError.message}`,
+      );
+    }
+  }
+}
+
 export async function POST(req: Request) {
   const { error } = await requireAdmin();
   if (error) return error;
 
   try {
+    let supabase;
+    try {
+      supabase = createServiceSupabase();
+    } catch (envError) {
+      return NextResponse.json(
+        {
+          error:
+            envError instanceof Error
+              ? envError.message
+              : "Supabase storage is not configured",
+        },
+        { status: 500 },
+      );
+    }
+
     const form = await req.formData();
     const file = form.get("file");
     const context = form.get("context")?.toString() ?? "product";
@@ -53,14 +105,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = createServiceSupabase();
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.some((b) => b.name === BUCKET)) {
-      await supabase.storage.createBucket(BUCKET, {
-        public: true,
-        fileSizeLimit: MAX_VIDEO_BYTES,
-      });
-    }
+    await ensureBucket(supabase);
 
     const ext =
       file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ||
@@ -69,13 +114,28 @@ export async function POST(req: Request) {
     const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, buffer, { contentType: file.type, upsert: false });
+    let uploadError = (
+      await supabase.storage
+        .from(BUCKET)
+        .upload(path, buffer, { contentType: file.type, upsert: false })
+    ).error;
+
+    // Retry once with upsert if the path collided or policy requires it.
+    if (uploadError) {
+      uploadError = (
+        await supabase.storage
+          .from(BUCKET)
+          .upload(path, buffer, { contentType: file.type, upsert: true })
+      ).error;
+    }
 
     if (uploadError) {
       return NextResponse.json(
-        { error: uploadError.message || "Upload failed" },
+        {
+          error:
+            uploadError.message ||
+            `Upload failed. In Supabase → Storage, ensure bucket "${BUCKET}" exists and is public.`,
+        },
         { status: 500 },
       );
     }

@@ -57,6 +57,7 @@ export function SettingsForm({ group = "payments" }: { group?: string }) {
   }
 
   const rows = items.filter((i) => i.group === group);
+  const isUrlSetting = (key: string) => key.endsWith("_url");
 
   return (
     <form onSubmit={onSubmit} className="max-w-lg space-y-4 text-sm">
@@ -68,9 +69,21 @@ export function SettingsForm({ group = "payments" }: { group?: string }) {
           ) : null}
           <input
             className="mt-1 w-full border px-2 py-1"
-            type={row.isSecret ? "password" : "text"}
+            type={row.isSecret ? "password" : isUrlSetting(row.key) ? "url" : "text"}
+            inputMode={isUrlSetting(row.key) ? "url" : undefined}
+            autoComplete={isUrlSetting(row.key) ? "url" : undefined}
             value={values[row.key] ?? ""}
-            placeholder={row.isSecret && row.hasValue ? "Leave blank to keep" : ""}
+            placeholder={
+              row.isSecret && row.hasValue
+                ? "Leave blank to keep"
+                : row.key === "social_facebook_url"
+                  ? "https://facebook.com/…"
+                  : row.key === "social_instagram_url"
+                    ? "https://instagram.com/…"
+                    : row.key === "social_tiktok_url"
+                      ? "https://tiktok.com/@…"
+                      : ""
+            }
             onChange={(e) =>
               setValues((prev) => ({ ...prev, [row.key]: e.target.value }))
             }

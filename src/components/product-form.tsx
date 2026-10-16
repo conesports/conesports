@@ -4,6 +4,11 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminBackLink, AdminCard } from "@/components/admin-page-header";
 import { slugify, koboToNaira } from "@/lib/money";
+import {
+  PRODUCT_COLORS,
+  PRODUCT_SIZES,
+  colorHex,
+} from "@/lib/product-options";
 
 type Category = { id: string; name: string };
 type VariantRow = { id?: string; size: string; color: string; stock: number };
@@ -57,11 +62,12 @@ export function ProductForm({
   const [variants, setVariants] = useState<VariantRow[]>(
     initial?.variants?.length
       ? initial.variants
-      : [{ size: "", color: "", stock: 0 }],
+      : [{ size: "M", color: "Black", stock: 0 }],
   );
   const [images, setImages] = useState<string[]>(initial?.images ?? []);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const autoSlug = useMemo(() => slugify(name), [name]);
@@ -72,15 +78,26 @@ export function ProductForm({
   }
 
   async function uploadImage(file: File) {
-    const form = new FormData();
-    form.append("file", file);
-    form.append("context", "product");
-    const res = await fetch("/api/admin/upload", { method: "POST", body: form });
-    const data = (await res.json()) as { url?: string; error?: string };
-    if (!res.ok || !data.url) {
-      throw new Error(data.error ?? "Upload failed");
+    setUploading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("context", "product");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: form });
+      let data: { url?: string; error?: string } = {};
+      try {
+        data = (await res.json()) as { url?: string; error?: string };
+      } catch {
+        throw new Error("Upload failed — invalid server response");
+      }
+      if (!res.ok || !data.url) {
+        throw new Error(data.error ?? `Upload failed (${res.status})`);
+      }
+      setImages((prev) => [...prev, data.url!]);
+    } finally {
+      setUploading(false);
     }
-    setImages((prev) => [...prev, data.url!]);
   }
 
   async function onSubmit(event: React.FormEvent) {
@@ -224,64 +241,121 @@ export function ProductForm({
 
           <AdminCard title="Variants">
             <div className="space-y-3">
-              {variants.map((row, index) => (
-                <div
-                  key={index}
-                  className="grid gap-2 rounded-xl border border-zinc-200 p-3 sm:grid-cols-[1fr_1fr_6rem_auto]"
-                >
-                  <input
-                    placeholder="Size"
-                    value={row.size}
-                    onChange={(e) =>
-                      setVariants((prev) =>
-                        prev.map((v, i) =>
-                          i === index ? { ...v, size: e.target.value } : v,
-                        ),
-                      )
-                    }
-                  />
-                  <input
-                    placeholder="Color"
-                    value={row.color}
-                    onChange={(e) =>
-                      setVariants((prev) =>
-                        prev.map((v, i) =>
-                          i === index ? { ...v, color: e.target.value } : v,
-                        ),
-                      )
-                    }
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Stock"
-                    value={row.stock}
-                    onChange={(e) =>
-                      setVariants((prev) =>
-                        prev.map((v, i) =>
-                          i === index
-                            ? { ...v, stock: Number(e.target.value) || 0 }
-                            : v,
-                        ),
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="rounded-xl px-3 py-2 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-black"
-                    onClick={() =>
-                      setVariants((prev) => prev.filter((_, i) => i !== index))
-                    }
+              {variants.map((row, index) => {
+                const sizeOptions = PRODUCT_SIZES.includes(
+                  row.size as (typeof PRODUCT_SIZES)[number],
+                )
+                  ? PRODUCT_SIZES
+                  : row.size
+                    ? [row.size, ...PRODUCT_SIZES]
+                    : PRODUCT_SIZES;
+                const knownColor = PRODUCT_COLORS.some((c) => c.name === row.color);
+                const colorOptions = knownColor
+                  ? PRODUCT_COLORS
+                  : row.color
+                    ? [{ name: row.color, hex: colorHex(row.color) }, ...PRODUCT_COLORS]
+                    : PRODUCT_COLORS;
+
+                return (
+                  <div
+                    key={index}
+                    className="grid gap-2 rounded-xl border border-zinc-200 p-3 sm:grid-cols-[1fr_1.2fr_6rem_auto]"
                   >
-                    Remove
-                  </button>
-                </div>
-              ))}
+                    <label className="block text-xs font-medium text-zinc-500">
+                      Size
+                      <select
+                        className="mt-1 w-full"
+                        value={row.size}
+                        onChange={(e) =>
+                          setVariants((prev) =>
+                            prev.map((v, i) =>
+                              i === index ? { ...v, size: e.target.value } : v,
+                            ),
+                          )
+                        }
+                      >
+                        <option value="" disabled>
+                          Select size
+                        </option>
+                        {sizeOptions.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block text-xs font-medium text-zinc-500">
+                      Color
+                      <span className="mt-1 flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className="h-9 w-9 shrink-0 rounded-lg border border-zinc-200 shadow-sm"
+                          style={{ backgroundColor: colorHex(row.color) }}
+                        />
+                        <select
+                          className="w-full"
+                          value={row.color}
+                          onChange={(e) =>
+                            setVariants((prev) =>
+                              prev.map((v, i) =>
+                                i === index ? { ...v, color: e.target.value } : v,
+                              ),
+                            )
+                          }
+                        >
+                          <option value="" disabled>
+                            Select color
+                          </option>
+                          {colorOptions.map((color) => (
+                            <option key={color.name} value={color.name}>
+                              {color.name}
+                            </option>
+                          ))}
+                        </select>
+                      </span>
+                    </label>
+
+                    <label className="block text-xs font-medium text-zinc-500">
+                      Stock
+                      <input
+                        type="number"
+                        min="0"
+                        className="mt-1 w-full"
+                        placeholder="0"
+                        value={row.stock}
+                        onChange={(e) =>
+                          setVariants((prev) =>
+                            prev.map((v, i) =>
+                              i === index
+                                ? { ...v, stock: Number(e.target.value) || 0 }
+                                : v,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      className="self-end rounded-xl px-3 py-2 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-black"
+                      onClick={() =>
+                        setVariants((prev) => prev.filter((_, i) => i !== index))
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
               <button
                 type="button"
                 className="rounded-xl border border-dashed border-zinc-300 px-3 py-2.5 text-sm font-semibold text-zinc-600 transition hover:border-zinc-400 hover:text-black"
                 onClick={() =>
-                  setVariants((prev) => [...prev, { size: "", color: "", stock: 0 }])
+                  setVariants((prev) => [
+                    ...prev,
+                    { size: "M", color: "Black", stock: 0 },
+                  ])
                 }
               >
                 Add variant
@@ -304,16 +378,23 @@ export function ProductForm({
                 </div>
               ) : null}
 
-              <label className="admin-upload cursor-pointer">
+              <label
+                className={`admin-upload ${uploading ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
+              >
                 <span>
-                  {images.length ? "Add another image" : "Upload product image"}
+                  {uploading
+                    ? "Uploading…"
+                    : images.length
+                      ? "Add another image"
+                      : "Upload product image"}
                   <br />
-                  <span className="text-xs text-zinc-400">JPEG, PNG, WebP, GIF</span>
+                  <span className="text-xs text-zinc-400">JPEG, PNG, WebP, GIF · max 8MB</span>
                 </span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
+                  disabled={uploading}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;

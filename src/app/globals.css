@@ -242,6 +242,10 @@ html[data-mobile-preload="open"] body {
   padding: 1.25rem 1.35rem;
 }
 
+.admin-card.admin-card--flush {
+  padding: 0;
+}
+
 @media (min-width: 768px) {
   .admin-card {
     padding: 1.4rem 1.5rem;

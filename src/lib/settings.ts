@@ -121,6 +121,24 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     isSecret: false,
   },
   {
+    key: "social_facebook_url",
+    label: "Facebook URL",
+    group: "marketing",
+    isSecret: false,
+  },
+  {
+    key: "social_instagram_url",
+    label: "Instagram URL",
+    group: "marketing",
+    isSecret: false,
+  },
+  {
+    key: "social_tiktok_url",
+    label: "TikTok URL",
+    group: "marketing",
+    isSecret: false,
+  },
+  {
     key: "resend_api_key",
     label: "Resend API key",
     group: "email",
