@@ -236,6 +236,18 @@ export const NAV_ITEMS: NavItem[] = [
       ]),
     ],
   },
+  {
+    id: "about",
+    label: "About",
+    href: "/about",
+    columns: [],
+  },
+  {
+    id: "blog",
+    label: "Blog",
+    href: "/blog",
+    columns: [],
+  },
 ];
 
 export type CatalogPage = {

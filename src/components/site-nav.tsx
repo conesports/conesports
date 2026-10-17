@@ -82,16 +82,27 @@ export function HeaderChrome({ loggedIn }: { loggedIn: boolean }) {
           onMouseLeave={scheduleClose}
         >
           {NAV_ITEMS.map((item) => {
+            const hasMenu = item.columns.length > 0;
             const triggerClass = `inline-flex h-16 items-center border-b-2 text-xs font-bold tracking-[0.14em] uppercase ${
               openId === item.id ? "border-black" : "border-transparent"
             } hover:opacity-70`;
             return (
             <div
               key={item.id}
-              onMouseEnter={() => keepOpen(item.id)}
-              onFocus={() => keepOpen(item.id)}
+              onMouseEnter={() => {
+                if (hasMenu) keepOpen(item.id);
+                else setOpenId(null);
+              }}
+              onFocus={() => {
+                if (hasMenu) keepOpen(item.id);
+                else setOpenId(null);
+              }}
             >
-              {item.href ? (
+              {item.href && !hasMenu ? (
+                <Link href={item.href} className={triggerClass}>
+                  {item.label}
+                </Link>
+              ) : item.href ? (
                 <Link
                   href={item.href}
                   className={triggerClass}
@@ -156,7 +167,7 @@ export function HeaderChrome({ loggedIn }: { loggedIn: boolean }) {
         </div>
       </div>
 
-      {openItem ? (
+      {openItem && openItem.columns.length > 0 ? (
         <div
           id={`${navId}-${openItem.id}`}
           className="absolute top-full right-0 left-0 z-40 hidden border-t border-zinc-200 bg-white shadow-lg lg:block"
@@ -218,6 +229,12 @@ export function HeaderChrome({ loggedIn }: { loggedIn: boolean }) {
               />
             ))}
             <div className="mt-6 space-y-3 border-t border-zinc-100 py-4 text-sm">
+              <Link href="/about" className="block" onClick={() => setMobileOpen(false)}>
+                About Us
+              </Link>
+              <Link href="/blog" className="block" onClick={() => setMobileOpen(false)}>
+                Blog
+              </Link>
               <Link href="/faq" className="block" onClick={() => setMobileOpen(false)}>
                 Help
               </Link>
@@ -269,6 +286,20 @@ function MobileSection({
   onToggle: () => void;
   onNavigate: () => void;
 }) {
+  if (item.columns.length === 0 && item.href) {
+    return (
+      <div className="border-b border-zinc-100 py-2">
+        <Link
+          href={item.href}
+          className="block py-3 text-sm font-bold tracking-[0.12em] uppercase"
+          onClick={onNavigate}
+        >
+          {item.label}
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="border-b border-zinc-100 py-2">
       <div className="flex items-center justify-between">

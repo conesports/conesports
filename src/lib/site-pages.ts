@@ -13,7 +13,7 @@ export const SITE_PAGES: SitePageDefinition[] = [
   { slug: "refund-policy", path: "/refund-policy", label: "Refund Policy" },
   { slug: "shipping-returns", path: "/shipping-returns", label: "Shipping & Returns" },
   { slug: "terms-of-service", path: "/terms-of-service", label: "Terms of Service" },
-  { slug: "about", path: "/about", label: "About / Sustainability" },
+  { slug: "about", path: "/about", label: "About Us" },
 ];
 
 export type SitePageContent = {
@@ -60,10 +60,10 @@ export const DEFAULT_SITE_PAGES: Record<string, Omit<SitePageContent, "slug" | "
       "<h2>Using this store</h2><p>By placing an order you confirm the information you provide is accurate and that you are authorised to use the selected payment method.</p><h2>Availability</h2><p>Prices and stock are confirmed at checkout. We may cancel an order if an item cannot be fulfilled and will notify you.</p>",
   },
   about: {
-    title: "About ConeSports",
-    metaDescription: "About ConeSports and how we operate.",
+    title: "About Us",
+    metaDescription: "Learn more about ConeSports.",
     bodyHtml:
-      "<h2>Who we are</h2><p>ConeSports is a single-vendor sports store. We sell the products listed in our catalog and ship domestically and internationally.</p><h2>Sustainability</h2><p>We aim to keep packaging simple and fulfil orders from current stock rather than over-producing.</p>",
+      "<h2>Our story</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p><p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><h2>What we stand for</h2><p>Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras mattis consectetur purus sit amet fermentum. Aenean lacinia bibendum nulla sed consectetur. Nullam id dolor id nibh ultricies vehicula ut id elit.</p><ul><li>Lorem ipsum dolor sit amet</li><li>Consectetur adipiscing elit</li><li>Sed do eiusmod tempor incididunt</li></ul><h2>Looking ahead</h2><p>Maecenas sed diam eget risus varius blandit sit amet non magna. Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>",
   },
 };
 

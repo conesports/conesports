@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BLOG_POSTS } from "@/lib/blog-posts";
 import { prisma } from "@/lib/prisma";
 import { SITE_PAGES } from "@/lib/site-pages";
 import { absoluteUrl } from "@/lib/seo";
@@ -11,7 +12,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/shop",
     "/faq",
     "/contact",
+    "/blog",
     ...SITE_PAGES.map((p) => p.path),
+    ...BLOG_POSTS.map((post) => `/blog/${post.slug}`),
   ];
 
   let products: { slug: string; updatedAt: Date }[] = [];

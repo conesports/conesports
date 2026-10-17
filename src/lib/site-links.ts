@@ -16,7 +16,8 @@ const POLICY_LINKS_KEY = "footer_policy_links";
 
 export const DEFAULT_QUICK_LINKS: SiteLink[] = [
   { label: "Shop", href: "/shop" },
-  { label: "About", href: "/about" },
+  { label: "About Us", href: "/about" },
+  { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
   { label: "Account", href: "/account" },

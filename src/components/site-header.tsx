@@ -21,6 +21,12 @@ export async function SiteHeader() {
         </p>
       ) : null}
       <div className="hidden items-center justify-end gap-5 bg-white px-8 py-1.5 text-[11px] text-zinc-600 lg:flex">
+        <Link href="/about" className="hover:text-black">
+          About Us
+        </Link>
+        <Link href="/blog" className="hover:text-black">
+          Blog
+        </Link>
         <Link href="/faq" className="hover:text-black">
           Help
         </Link>
